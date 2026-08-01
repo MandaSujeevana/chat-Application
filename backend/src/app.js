@@ -9,7 +9,7 @@ import { clerkMiddleware } from '@clerk/express'
 import { connectDB } from "./lib/db.js";
 import job from "./lib/cron.js";
 
-import clerkWebhook from "./webhook/clerk.webhook.js";
+import clerkWebhook from "./webhooks/clerk.webhooks.js";
 
 const app = express();
 
