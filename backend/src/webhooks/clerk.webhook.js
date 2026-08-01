@@ -1,57 +1,54 @@
 import express from "express";
-import cors from "cors";
-import "dotenv/config";
+import User from "../models/user.model.js";
+import { verifyWebhook } from "@clerk/backend/webhooks";
 
-import fs from "fs";
-import path from "path";
+const router = express.Router();
 
-import { clerkMiddleware } from '@clerk/express'
-import { connectDB } from "./lib/db.js";
-import job from "./lib/cron.js";
+router.post("/", async (req, res) => {
+  try {
+    const signingSecret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+    if (!signingSecret) {
+      res.status(503).json({ message: "Webhook secret is not provided" });
+      return;
+    }
 
-import clerkWebhook from "./webhooks/clerk.webhook.js";
+    // clerk's verifier expects a Web Request with the raw body; express.raw gives a Buffer.
+    const payload = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : String(req.body);
+    const request = new Request("http://internal/webhooks/clerk", {
+      method: "POST",
+      headers: new Headers(req.headers),
+      body: payload,
+    });
 
-const app = express();
+    // throws if the signature is wrong or the body was tampered with; only then do we trust evt.
+    const evt = await verifyWebhook(request, { signingSecret });
 
-const PORT = process.env.PORT;
-const FRONTEND_URL = process.env.FRONTEND_URL;
+    if (evt.type === "user.created" || evt.type === "user.updated") {
+      const u = evt.data;
 
-const publicDir = path.join(process.cwd(), "public");
+      const email =
+        u.email_addresses?.find((e) => e.id === u.primary_email_address_id)?.email_address ??
+        u.email_addresses?.[0]?.email_address;
 
-app.use("/api/webhook/clerk",express.raw({type:"application/json"}),clerkWebhook);
+      const fullName =
+        [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || email?.split("@")[0];
 
-app.use(express.json())
-app.use(cors({ origin: FRONTEND_URL, credentials: true}));
-app.use(clerkMiddleware())
+      await User.findOneAndUpdate(
+        { clerkId: u.id },
+        { clerkId: u.id, email, fullName, profilePic: u.image_url },
+        { new: true, upsert: true, setDefaultsOnInsert: true },
+      );
+    }
 
+    if (evt.type === "user.deleted") {
+      if (evt.data.id) await User.findOneAndDelete({ clerkId: evt.data.id });
+    }
 
-app.get("/health", (req, res) =>{
-  res.status(200).json({ok: true});
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("Error in Clerk webhook:", error);
+    res.status(400).json({ message: "Webhook verification failed" });
+  }
 });
 
-if(fs.existsSync(publicDir)){
-
-  app.use(express.static(publicDir));
-
-  app.get("/{*any}",(req,res,next) => {
-    res.sendFile(path.join(publicDir,"index.html"), (err) => next(err));
-  });
-}
-
-const startServer = async () => {
-  try {
-    await connectDB();
-
-    app.listen(PORT, () => {
-      console.log(`Server is up and running on PORT: ${PORT}`);
-    });
-   if(process.env.NODE_ENV === "production") {
-    job.start();
-
-   } 
-  } catch (err) {
-    console.error("Failed to start server:", err);
-  }
-};
-
-startServer();
+export default router;
