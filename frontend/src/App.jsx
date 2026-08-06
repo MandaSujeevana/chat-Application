@@ -1,9 +1,11 @@
 import './App.css'
 import { useState } from 'react';
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react'
+import { useSyncUser } from './hooks/useSyncUser';
 
 
 function App() {
+  useSyncUser();
   const [count, setCount] = useState(0)
 
   return (
