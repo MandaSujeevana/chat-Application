@@ -2,6 +2,7 @@ import React from 'react'
 import AuthHeader from '../components/auth/AuthHeader';
 import AuthHeroPanel from '../components/auth/AuthHeroPanel';
 import AuthActionPanel from '../components/auth/AuthActionPanel';
+import { useWallpaper } from '../context/wallpaper';
 
 function Authpage() {
   const {frameStyle }=useWallpaper();
