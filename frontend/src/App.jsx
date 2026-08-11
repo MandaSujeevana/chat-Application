@@ -1,4 +1,4 @@
-import { useState } from 'react';
+
 import { useSyncUser } from './hooks/useSyncUser';
 import { WallpaperProvider } from "./context/WallpaperContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -10,11 +10,10 @@ import { useAuth } from "@clerk/react";
 
 function App() {
   const { isSignedIn, isLoaded } = useAuth();
+  useSyncUser();
+
   //todo: make this a better component
   if (!isLoaded) return <p>loading...</p>;
-
-  useSyncUser();
-  const [count, setCount] = useState(0)
 
   return (
     <ThemeProvider>
@@ -23,7 +22,7 @@ function App() {
           <Route path="/" element={isSignedIn ? <ChatPage /> : <Navigate to={"/auth"} replace />} />
           <Route
             path="/auth"
-            element={!isSignedIn ? <AuthPage /> : <Navigate to={"/chat"} replace />}
+            element={!isSignedIn ? <AuthPage /> : <Navigate to={"/"} replace />}
           />
 
        </Routes>
