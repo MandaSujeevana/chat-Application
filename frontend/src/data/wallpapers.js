@@ -89,6 +89,7 @@ export function frameStyleFromUrl(url) {
     backgroundImage: `url("${url}")`,
     backgroundSize: "cover",
     backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
   };
 }
 
