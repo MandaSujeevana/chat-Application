@@ -6,14 +6,14 @@ import { Navigate, Route, Routes } from "react-router";
 import ChatPage from "./pages/ChatPage.jsx";
 import AuthPage from './pages/AuthPage.jsx';
 import { useAuth } from "@clerk/react";
+import PageLoader from "./components/PageLoader";
 
 
 function App() {
   const { isSignedIn, isLoaded } = useAuth();
   useSyncUser();
 
-  //todo: make this a better component
-  if (!isLoaded) return <p>loading...</p>;
+  if (!isLoaded) return <PageLoader/>
 
   return (
     <ThemeProvider>
