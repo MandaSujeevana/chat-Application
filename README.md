@@ -30,13 +30,7 @@ A full-stack real-time chat application built using the **MERN stack**, **Socket
 
 **Deployment:** Render
 
-## 📂 Project Structure
-Chat-Application/
-├── frontend/
-├── backend/
-├── Dockerfile
-├── .gitignore
-└── README.mdSocket.IO
+
 
 
 
