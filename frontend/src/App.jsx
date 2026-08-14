@@ -7,7 +7,7 @@ import ChatPage from "./pages/ChatPage.jsx";
 import AuthPage from './pages/AuthPage.jsx';
 import { useAuth } from "@clerk/react";
 import PageLoader from "./components/PageLoader";
-import { useAuthStore } from "./store/useAuthStore.";
+import { useAuthStore } from "./store/useAuthStore";
 import { useEffect } from 'react';
 import { Toaster } from "react-hot-toast";
 
