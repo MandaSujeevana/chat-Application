@@ -44,6 +44,14 @@ if(fs.existsSync(publicDir)){
   });
 }
 
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Promise Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
 const startServer = async () => {
   try {
     await connectDB();
@@ -60,4 +68,4 @@ const startServer = async () => {
   }
 };
 
-startServer();
+startServer();

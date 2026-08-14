@@ -1,5 +1,8 @@
+import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
+import { uploadChatMedia, hasImageKitConfig } from "../lib/imagekit.js";
 
 
 export async function getUsersForSidebar(req, res) {
@@ -11,7 +14,7 @@ export async function getUsersForSidebar(req, res) {
     res.status(200).json(filteredUsers);
   } catch (error) {
     console.error("Error in getUsersForSidebar:", error.message);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: error.message || "Internal server error" });
   }
 }
 
@@ -30,6 +33,7 @@ export async function getConversationsForSidebar(req, res) {
       },
       { $sort: { lastMessageAt: -1 } },
       { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+      { $match: { user: { $ne: [] } } },
       { $replaceRoot: { newRoot: { $first: "$user" } } },
       { $project: { clerkId: 0 } },
     ]);
@@ -37,7 +41,7 @@ export async function getConversationsForSidebar(req, res) {
     res.status(200).json(conversations);
   } catch (error) {
     console.error("Error in getConversationsForSidebar:", error.message);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: error.message || "Internal server error" });
   }
 }
 
@@ -45,6 +49,10 @@ export async function getMessages(req, res) {
   try {
     const { id: userToChatId } = req.params;
     const myId = req.user._id;
+
+    if (!userToChatId || !mongoose.Types.ObjectId.isValid(userToChatId)) {
+      return res.status(200).json([]);
+    }
 
     const messages = await Message.find({
       $or: [
@@ -55,8 +63,8 @@ export async function getMessages(req, res) {
 
     res.status(200).json(messages);
   } catch (error) {
-    console.error("Error in getMessages:", error.message);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error in getMessages:", error);
+    res.status(500).json({ message: error.message || "Internal server error" });
   }
 }
 
@@ -70,10 +78,6 @@ export async function sendMessage(req, res) {
     let videoUrl;
 
     if (req.file) {
-      if (!hasImageKitConfig()) {
-        return res.status(500).json({ message: "Media upload is not configured" });
-      }
-
       const url = await uploadChatMedia(req.file);
       if (req.file.mimetype.startsWith("video/")) videoUrl = url;
       else imageUrl = url;
@@ -89,14 +93,14 @@ export async function sendMessage(req, res) {
 
     await newMessage.save();
 
-      const receiverSocketId = getReceiverSocketId(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("newMessage", newMessage);
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
     res.status(201).json(newMessage);
   } catch (error) {
-    console.error("Error in sendMessage:", error.message);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error in sendMessage:", error);
+    res.status(500).json({ message: error.message || "Failed to send message" });
   }
 }

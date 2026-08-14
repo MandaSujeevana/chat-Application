@@ -13,9 +13,18 @@ const router = express.Router();
 
 router.use(protectRoute);
 
+const handleUpload = (req, res, next) => {
+  upload.single("media")(req, res, (err) => {
+    if (err) {
+      console.error("Upload middleware error:", err.message);
+      return res.status(400).json({ message: err.message });
+    }
+    next();
+  });
+};
+
 router.get("/users", getUsersForSidebar);
 router.get("/conversations", getConversationsForSidebar);
 router.get("/:id", getMessages);
-router.post("/send/:id", upload.single("media"), sendMessage);
-//todo:show this in frontend
-export default router;
+router.post("/send/:id", handleUpload, sendMessage);
+export default router;
